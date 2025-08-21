@@ -1,5 +1,6 @@
 package Attestation01;
 
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Scanner;
@@ -18,6 +19,11 @@ public class App {
                 if (line.isBlank()) break;
 
                 String[] parts = line.split("=");
+                if (parts.length != 2) {
+                    System.out.println("❌ Неверный формат! Используйте: Имя = Сумма");
+                    continue;
+                }
+
                 String name = parts[0].trim();
                 int money = Integer.parseInt(parts[1].trim());
 
@@ -26,17 +32,37 @@ public class App {
             }
 
             // Ввод продуктов
-            System.out.println("Введите продукты в формате: Название = Цена (пустая строка — завершение ввода)");
+            System.out.println("Введите продукты. Форматы:");
+            System.out.println("Обычный: Название = Цена");
+            System.out.println("Скидочный: Название = Цена = Скидка% = ГГГГ-ММ-ДД");
+            System.out.println("Пустая строка — завершение ввода");
+
             while (true) {
                 String line = scanner.nextLine();
                 if (line.isBlank()) break;
 
                 String[] parts = line.split("=");
-                String name = parts[0].trim();
-                int price = Integer.parseInt(parts[1].trim());
+                if (parts.length == 2) {
+                    // Обычный продукт
+                    String name = parts[0].trim();
+                    int price = Integer.parseInt(parts[1].trim());
 
-                Product product = new Product(name, price);
-                products.put(name, product);
+                    Product product = new Product(name, price);
+                    products.put(name, product);
+
+                } else if (parts.length == 4) {
+                    // Скидочный продукт
+                    String name = parts[0].trim();
+                    int price = Integer.parseInt(parts[1].trim());
+                    int discount = Integer.parseInt(parts[2].trim());
+                    LocalDate expiry = LocalDate.parse(parts[3].trim());
+
+                    Product product = new DiscountProduct(name, price, discount, expiry);
+                    products.put(name, product);
+
+                } else {
+                    System.out.println("❌ Неверный формат продукта!");
+                }
             }
 
             // Ввод покупок
@@ -46,7 +72,10 @@ public class App {
                 if (line.equalsIgnoreCase("END")) break;
 
                 String[] parts = line.split("-");
-                if (parts.length != 2) continue;
+                if (parts.length != 2) {
+                    System.out.println("❌ Неверный формат! Используйте: Имя - НазваниеПродукта");
+                    continue;
+                }
 
                 String personName = parts[0].trim();
                 String productName = parts[1].trim();
@@ -54,7 +83,11 @@ public class App {
                 Person person = people.get(personName);
                 Product product = products.get(productName);
 
-                if (person != null && product != null) {
+                if (person == null) {
+                    System.out.println("❌ Покупатель " + personName + " не найден!");
+                } else if (product == null) {
+                    System.out.println("❌ Продукт " + productName + " не найден!");
+                } else {
                     person.buy(product);
                 }
             }
@@ -66,7 +99,9 @@ public class App {
             }
 
         } catch (IllegalArgumentException e) {
-            System.out.println(e.getMessage());
+            System.out.println("Ошибка: " + e.getMessage());
+        } finally {
+            scanner.close();
         }
     }
 }
